@@ -1,0 +1,114 @@
+
+# Loads default set of integrations. Do not remove.
+default_config:
+
+# Load frontend themes from the themes folder
+frontend:
+  themes: !include_dir_merge_named themes
+
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+template: !include template.yaml
+
+#services: !include services.yaml
+#sensor:
+  #- platform: nordpool
+   # region: "EE"
+
+logger:
+  logs:
+    nordpool: debug
+    custom_components.nordpool: debug
+    custom_components.nordpool.sensor: debug
+    custom_components.nordpool.aio_price: debug      
+    
+
+          
+aio_energy_management:
+  calendar:
+    name: Energy Man2 
+    unique_id: energy_management_calendar
+  cheapest_hours:
+   - nordpool_official_config_entry: 01KEH5P3V0W8K9W0NJSAX6QHJ5
+     unique_id: cheapest_hours_oliradikas1
+     name: Cheapest Hours Oliradikas1
+     first_hour: 01
+     last_hour: 23
+     starting_today: false
+     number_of_hours: 2
+     sequential: false
+     max_price: 50.0
+     price_modifications: >
+      {%- set as_snt = price / 10.0 %}
+      {%- set with_taxes = (as_snt * 1.24) | float %}
+      {{ with_taxes }}
+      #{{ (price / 10 * 1.24) | round(3) }}
+   - nordpool_official_config_entry: 01KEH5P3V0W8K9W0NJSAX6QHJ5
+     unique_id: cheapest_hours_water_boiler
+     name: Cheapest Hours Water Boiler1
+     first_hour: 21
+     last_hour: 20
+     starting_today: true
+     number_of_hours: 3
+     sequential: false
+     #failsafe_starting_hour: 1
+     price_modifications: >
+      {%- set as_snt = price / 10.0 %}
+      {%- set with_taxes = (as_snt * 1.24) | float %}
+      {{ with_taxes }}
+
+mqtt:
+  sensor:        
+  - name: "Sauna Temperatuur"
+    state_topic: "rtl433/LaCrosse-TX/63"
+ 
+    unique_id: attic_temperature
+    qos: 0
+    force_update: true
+    unit_of_measurement: "°C"
+ 
+    #value_template: "{{ (value_json | float * 100 ) | int }}"
+    #value_template: "{{ value_json.temperature_F }}"   # tootab
+    value_template: "{{ ((value_json.temperature_F | float - 32) * 5 / 9) | round(1) }}"
+    device: {
+        model: "LaCrosse-TX",
+        identifiers: ["63"],
+        name: "Sauna Sensor",
+        suggested_area: "Attic"
+        }   
+    
+  - name: "Väljas Temperatuur"
+    state_topic: "rtl433/Vauno-EN8822C/52"
+ 
+    unique_id: väljas_temperature
+    qos: 0
+    force_update: true
+    unit_of_measurement: "°C"
+ 
+    #value_template: "{{ (value_json | float * 100 ) | int }}"
+    #value_template: "{{ value_json.temperature_F }}"   # tootab
+    value_template: "{{ ((value_json.temperature_F | float - 32) * 5 / 9) | round(1) }}"
+    device: {
+        model: "Vauno-EN8822C",
+        identifiers: ["52"],
+        name: "Välasi Sensor",
+        suggested_area: "Attic"
+        }      
+  - name: "Sahvri Temperatuur"
+    state_topic: "rtl433/Vauno-EN8822C/57"
+ 
+    unique_id: sahvri_temperature
+    qos: 0
+    force_update: true
+    unit_of_measurement: "°C"
+ 
+    #value_template: "{{ (value_json | float * 100 ) | int }}"
+    #value_template: "{{ value_json.temperature_F }}"   # tootab
+    value_template: "{{ ((value_json.temperature_F | float - 32) * 5 / 9) | round(1) }}"
+    device: {
+        model: "Vauno-EN8822C",
+        identifiers: ["57"],
+        name: "Sahvri Sensor",
+        suggested_area: "Attic"
+        }         
