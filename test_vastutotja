@@ -1,0 +1,93 @@
+esphome:
+  name: esp32-epaper-receiver
+  friendly_name: ESP32 E-Paper Receiver
+
+esp32:
+  board: esp32dev
+  variant: esp32
+  framework:
+    type: esp-idf
+
+logger:
+
+api:
+
+ota:
+  - platform: esphome
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  power_save_mode: NONE
+  ap:
+    ssid: ESP32 E-Paper Fallback Hotspot
+    password: "1ft1tR5H0ds7"
+
+captive_portal:
+
+# 1. Registreerime saatja MAC-aadressi ametliku Peerina
+espnow:
+  peers:
+    - E0:8C:FE:2F:B8:64
+
+# 2. Seadistame transpordikihi kuulama sissetulevaid andmeid
+packet_transport:
+  - platform: espnow
+    id: espnow_transport
+    providers:
+      - name: esp32-dev-mod-ds18b20
+
+# 3. Tarbija andur vastavalt saatja täpsetele parameetritele
+sensor:
+  - platform: packet_transport
+    id: rc_ds18b20_sensor
+    provider: esp32-dev-mod-ds18b20
+    remote_id: sensor_dallas_temp_1
+    internal: false
+    name: "Vastuvõetud Boiler (DS18B20)"
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+
+# 4. SPI siin E-Paper ekraani jaoks
+spi:
+  clk_pin: GPIO18
+  mosi_pin: GPIO23
+
+# Tagasi puhta Roboto fondi peal
+font:
+  - file: "gfonts://Roboto"
+    id: font_small
+    size: 12
+  - file: "gfonts://Roboto"
+    id: font_medium
+    size: 20
+  - file: "gfonts://Roboto"
+    id: font_large
+    size: 32
+
+# 5. Ekraani seadistus (Waveshare 2.13" SSD1680)
+display:
+  - platform: waveshare_epaper
+    id: my_display
+    model: 2.13in-ttgo-b74
+    cs_pin: GPIO5
+    dc_pin: GPIO17
+    reset_pin: GPIO16
+    busy_pin: GPIO4
+    rotation: 90°
+    full_update_every: 1
+    update_interval: 60s
+    
+    lambda: |-
+      // Joonistame ekraanile teksti
+      it.print(10, 5, id(font_small), "ESP-NOW MONITOR");
+      
+      // PARANDATUD: Kirjutatud suurte tähtedega (BOILER:), et I ja L oleksid paksud ja selged
+      it.print(10, 20, id(font_medium), "BOILER:");
+      
+      // Kuvame temperatuuri kohalikust sensorist
+      if (id(rc_ds18b20_sensor).has_state()) {
+        it.printf(10, 50, id(font_large), "%.1f °C", id(rc_ds18b20_sensor).state);
+      } else {
+        it.print(10, 50, id(font_large), "-- °C");
+      }
