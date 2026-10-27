@@ -1,7 +1,6 @@
-# claude 26.10.26
-
 esphome:
-  name: sauna-saatja
+  name: esp32-ds18b20-pt100
+  friendly_name: ESP32 Sauna saatja
 
 esp32:
   board: esp32dev
@@ -9,29 +8,56 @@ esp32:
     type: esp-idf
 
 logger:
-
-wifi:
-  ssid: !secret wifi_ssid
-  password: !secret wifi_password
+  level: DEBUG
 
 api:
 
 ota:
-  platform: esphome
+  - platform: esphome
 
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  power_save_mode: NONE
+  ap:
+    ssid: "Sauna saatja Fallback"
+    password: "1ft1tR5H0ds7"
+
+captive_portal:
+
+# ESP-NOW raadio
+espnow:
+
+# Andurite edastus vastuvõtjale
+packet_transport:
+  - platform: espnow
+    id: espnow_transport
+    sensors:
+      - pt100_sensor
+      - boiler_sensor
+
+# Kaks SPI bussi: MAX31865 ja TFT ekraan
 spi:
-  clk_pin: GPIO18
-  mosi_pin: GPIO23
-  miso_pin: GPIO19
+  - id: spi_sensor
+    clk_pin: GPIO18
+    mosi_pin: GPIO23
+    miso_pin: GPIO19
+  - id: spi_tft
+    clk_pin: GPIO14
+    mosi_pin: GPIO13
 
+# DS18B20 1-Wire
 one_wire:
   - platform: gpio
+    id: one_wire_bus
     pin: GPIO4
 
 sensor:
+  # Sauna temperatuur (PT100)
   - platform: max31865
+    id: pt100_sensor
     name: "Sauna temperatuur"
-    id: sauna_temp
+    spi_id: spi_sensor
     cs_pin: GPIO5
     reference_resistance: 430 Ω
     rtd_nominal_resistance: 100 Ω
@@ -41,7 +67,54 @@ sensor:
     unit_of_measurement: "°C"
     accuracy_decimals: 1
 
+  # Boileri temperatuur (DS18B20)
   - platform: dallas_temp
-    name: "Vee temperatuur"
-    id: vee_temp
+    id: boiler_sensor
+    one_wire_id: one_wire_bus
+    name: "Boiler temperatuur"
     update_interval: 2s
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+
+font:
+  - file: "gfonts://Roboto"
+    id: font_medium
+    size: 24
+  - file: "gfonts://Roboto"
+    id: font_large
+    size: 56
+
+# TFT ekraan (ST7789, 240x320, sinu User_Setup.h pin-id)
+display:
+  - platform: ili9xxx
+    id: sender_display
+    spi_id: spi_tft
+    model: ST7789V
+    cs_pin: GPIO26
+    dc_pin: GPIO33
+    reset_pin: GPIO27
+    data_rate: 27MHz
+    rotation: 90
+    buffer_size: 25%
+    update_interval: 2s
+    lambda: |-
+      it.fill(Color::BLACK);
+      it.line(160, 30, 160, 220, Color(80, 80, 80));
+
+      // Vasak: PT100 (sauna)
+      it.print(80, 30, id(font_medium), Color::WHITE, TextAlign::TOP_CENTER, "SAUNA");
+      if (id(pt100_sensor).has_state() && !isnan(id(pt100_sensor).state)) {
+        it.printf(80, 120, id(font_large), Color(255, 140, 0), TextAlign::CENTER, "%.1f", id(pt100_sensor).state);
+      } else {
+        it.print(80, 120, id(font_large), Color(255, 140, 0), TextAlign::CENTER, "--");
+      }
+      it.print(80, 170, id(font_medium), Color::WHITE, TextAlign::TOP_CENTER, "°C");
+
+      // Parem: DS18B20 (boiler)
+      it.print(240, 30, id(font_medium), Color::WHITE, TextAlign::TOP_CENTER, "BOILER");
+      if (id(boiler_sensor).has_state() && !isnan(id(boiler_sensor).state)) {
+        it.printf(240, 120, id(font_large), Color(0, 200, 255), TextAlign::CENTER, "%.1f", id(boiler_sensor).state);
+      } else {
+        it.print(240, 120, id(font_large), Color(0, 200, 255), TextAlign::CENTER, "--");
+      }
+      it.print(240, 170, id(font_medium), Color::WHITE, TextAlign::TOP_CENTER, "°C");
