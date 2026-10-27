@@ -82,7 +82,8 @@ font:
     size: 24
   - file: "gfonts://Roboto"
     id: font_large
-    size: 56
+    size: 80
+
 
 # TFT ekraan (ST7789, 240x320)
 display:
@@ -106,17 +107,15 @@ display:
       // Vasak: PT100 (sauna)
       it.print(80, 30, id(font_medium), Color::WHITE, TextAlign::TOP_CENTER, "SAUNA");
       if (id(pt100_sensor).has_state() && !isnan(id(pt100_sensor).state)) {
-        it.printf(80, 120, id(font_large), Color(255, 140, 0), TextAlign::CENTER, "%.1f", id(pt100_sensor).state);
+        it.printf(80, 135, id(font_large), Color(255, 140, 0), TextAlign::CENTER, "%.0f", id(pt100_sensor).state);
       } else {
-        it.print(80, 120, id(font_large), Color(255, 140, 0), TextAlign::CENTER, "--");
+        it.print(80, 135, id(font_large), Color(255, 140, 0), TextAlign::CENTER, "--");
       }
-      it.print(80, 170, id(font_medium), Color::WHITE, TextAlign::TOP_CENTER, "°C");
 
       // Parem: DS18B20 (boiler)
       it.print(240, 30, id(font_medium), Color::WHITE, TextAlign::TOP_CENTER, "BOILER");
       if (id(boiler_sensor).has_state() && !isnan(id(boiler_sensor).state)) {
-        it.printf(240, 120, id(font_large), Color(0, 200, 255), TextAlign::CENTER, "%.1f", id(boiler_sensor).state);
+        it.printf(240, 135, id(font_large), Color(0, 200, 255), TextAlign::CENTER, "%.0f", id(boiler_sensor).state);
       } else {
-        it.print(240, 120, id(font_large), Color(0, 200, 255), TextAlign::CENTER, "--");
+        it.print(240, 135, id(font_large), Color(0, 200, 255), TextAlign::CENTER, "--");
       }
-      it.print(240, 170, id(font_medium), Color::WHITE, TextAlign::TOP_CENTER, "°C");
