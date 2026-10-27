@@ -84,7 +84,7 @@ font:
     id: font_large
     size: 56
 
-# TFT ekraan (ST7789, 240x320, sinu User_Setup.h pin-id)
+# TFT ekraan (ST7789, 240x320)
 display:
   - platform: ili9xxx
     id: sender_display
