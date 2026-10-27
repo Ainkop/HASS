@@ -96,6 +96,7 @@ display:
     data_rate: 27MHz
     rotation: 90
     invert_colors: true
+    color_palette: 8BIT
     buffer_size: 25%
     update_interval: 2s
     lambda: |-
