@@ -1,5 +1,3 @@
-Must provide internal: config when using name:. Go to line 39
-
-
-'invert_colors' is a required option for [display.ili9xxx]. Go to line 88
+ESPHome reported 1 error in this configuration. Save anyway, jump to it to fix it, or cancel.
+[buffer_size] is an invalid option for [display.ili9xxx]. Please check the indentation.
 
