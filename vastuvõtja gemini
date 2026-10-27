@@ -26,50 +26,42 @@ wifi:
 
 captive_portal:
 
-# 1. Käivitame ESP-NOW ja loeme otse mälust saatja C++ struktuuri (8 baiti)
+# ESP-NOW raadio
 espnow:
   peers:
-    - E0:8C:FE:2F:B8:64  # Sinu saatja füüsiline MAC aadress
-  on_receive:
-    - then:
-        - sensor.template.publish:
-            id: sensor_pt100
-            state: !lambda |-
-              if (packet.data.size() >= 8) {
-                int pt100_val;
-                memcpy(&pt100_val, packet.data.data(), 4);
-                return pt100_val;
-              }
-              return NAN;
-        - sensor.template.publish:
-            id: sensor_ds18b20
-            state: !lambda |-
-              if (packet.data.size() >= 8) {
-                float ds_val;
-                memcpy(&ds_val, packet.data.data() + 4, 4); // loeb alates 4. baidist
-                return ds_val;
-              }
-              return NAN;
+    - E0:8C:FE:2F:B8:64   # saatja MAC
 
-# 2. Kaks template andurit väärtuste hoidmiseks
+# Andmete vastuvõtt saatjalt
+packet_transport:
+  - platform: espnow
+    id: espnow_transport
+    providers:
+      - name: esp32-ds18b20-pt100   # peab võrduma saatja esphome: name
+
 sensor:
-  - platform: template
-    id: sensor_pt100
-    name: "Vastuvõetud PT100"
-    unit_of_measurement: "°C"
-    accuracy_decimals: 0
-  - platform: template
-    id: sensor_ds18b20
-    name: "Vastuvõetud DS18B20"
+  - platform: packet_transport
+    id: rc_pt100_sensor
+    provider: esp32-ds18b20-pt100
+    remote_id: pt100_sensor
+    internal: false
+    name: "Sauna (PT100)"
     unit_of_measurement: "°C"
     accuracy_decimals: 1
 
-# 3. SPI siin E-Paper ekraani jaoks
+  - platform: packet_transport
+    id: rc_boiler_sensor
+    provider: esp32-ds18b20-pt100
+    remote_id: boiler_sensor
+    internal: false
+    name: "Boiler (DS18B20)"
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+
+# SPI e-paper ekraanile
 spi:
   clk_pin: GPIO18
   mosi_pin: GPIO23
 
-# Ilus modernne Roboto font
 font:
   - file: "gfonts://Roboto"
     id: font_small
@@ -81,7 +73,6 @@ font:
     id: font_large
     size: 26
 
-# 4. Ekraani disain suurte selgete tähtedega (kaotab hägususe)
 display:
   - platform: waveshare_epaper
     id: my_display
@@ -91,25 +82,24 @@ display:
     reset_pin: GPIO16
     busy_pin: GPIO4
     rotation: 90°
-    full_update_every: 1             # Täielik puhastus tagab maksimaalse kontrasti
-    update_interval: 10s             # Kuna saatja saadab iga 2s tagant, uuendame ekraani iga 10s järel
-    
+    full_update_every: 1
+    update_interval: 60s
     lambda: |-
       // Päis
       it.print(10, 5, id(font_small), "ESP-NOW MONITOR");
-      
-      // 1. Rida: PT100 andmed suurte tähtedega
-      it.print(10, 25, id(font_medium), "PT100:");
-      if (id(sensor_pt100).has_state()) {
-        it.printf(110, 22, id(font_medium), "%.0f °C", id(sensor_pt100).state);
+
+      // 1. rida: PT100 (sauna)
+      it.print(10, 25, id(font_medium), "SAUNA:");
+      if (id(rc_pt100_sensor).has_state() && !isnan(id(rc_pt100_sensor).state)) {
+        it.printf(110, 22, id(font_large), "%.1f °C", id(rc_pt100_sensor).state);
       } else {
-        it.print(110, 22, id(font_medium), "-- °C");
+        it.print(110, 22, id(font_large), "-- °C");
       }
-      
-      // 2. Rida: BOILER (DS18B20) suurte tähtedega (I ja L on täiesti teravad)
-      it.print(10, 50, id(font_medium), "BOILER:");
-      if (id(sensor_ds18b20).has_state()) {
-        it.printf(110, 45, id(font_large), "%.1f °C", id(sensor_ds18b20).state);
+
+      // 2. rida: BOILER (DS18B20)
+      it.print(10, 60, id(font_medium), "BOILER:");
+      if (id(rc_boiler_sensor).has_state() && !isnan(id(rc_boiler_sensor).state)) {
+        it.printf(110, 57, id(font_large), "%.1f °C", id(rc_boiler_sensor).state);
       } else {
-        it.print(110, 45, id(font_large), "-- °C");
+        it.print(110, 57, id(font_large), "-- °C");
       }
