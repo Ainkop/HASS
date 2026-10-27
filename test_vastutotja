@@ -1,13 +1,16 @@
+#viimane kood 20.55
 esphome:
   name: esp32-epaper-receiver
   friendly_name: ESP32 E-Paper Receiver
 
 esp32:
   board: esp32dev
+  variant: esp32
   framework:
     type: esp-idf
 
 logger:
+  level: DEBUG
 
 api:
 
@@ -19,7 +22,7 @@ wifi:
   password: !secret wifi_password
   power_save_mode: NONE
   ap:
-    ssid: "ESP32 E-Paper Fallback"
+    ssid: ESP32 E-Paper Fallback Hotspot
     password: "1ft1tR5H0ds7"
 
 captive_portal:
@@ -62,16 +65,12 @@ spi:
 
 font:
   - file: "gfonts://Roboto"
-    id: font_small
-    size: 12
-  - file: "gfonts://Roboto"
     id: font_medium
     size: 20
   - file: "gfonts://Roboto"
     id: font_large
-    size: 32
+    size: 64
 
-# Waveshare 2.13" e-paper
 display:
   - platform: waveshare_epaper
     id: my_display
@@ -84,18 +83,20 @@ display:
     full_update_every: 1
     update_interval: 60s
     lambda: |-
-      it.print(10, 0, id(font_small), "ESP-NOW MONITOR");
+      it.line(125, 25, 125, 115);
 
-      it.print(10, 22, id(font_medium), "SAUNA:");
+      // Vasak: PT100 (sauna)
+      it.print(62, 5, id(font_medium), TextAlign::TOP_CENTER, "SAUNA");
       if (id(rc_pt100_sensor).has_state() && !isnan(id(rc_pt100_sensor).state)) {
-        it.printf(110, 14, id(font_large), "%.1f °C", id(rc_pt100_sensor).state);
+        it.printf(62, 72, id(font_large), TextAlign::CENTER, "%.0f", id(rc_pt100_sensor).state);
       } else {
-        it.print(110, 14, id(font_large), "-- °C");
+        it.print(62, 72, id(font_large), TextAlign::CENTER, "--");
       }
 
-      it.print(10, 72, id(font_medium), "BOILER:");
+      // Parem: DS18B20 (boiler)
+      it.print(187, 5, id(font_medium), TextAlign::TOP_CENTER, "BOILER");
       if (id(rc_boiler_sensor).has_state() && !isnan(id(rc_boiler_sensor).state)) {
-        it.printf(110, 64, id(font_large), "%.1f °C", id(rc_boiler_sensor).state);
+        it.printf(187, 72, id(font_large), TextAlign::CENTER, "%.0f", id(rc_boiler_sensor).state);
       } else {
-        it.print(110, 64, id(font_large), "-- °C");
+        it.print(187, 72, id(font_large), TextAlign::CENTER, "--");
       }
