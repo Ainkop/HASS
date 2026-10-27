@@ -41,6 +41,7 @@ sensor:
     id: rc_pt100_sensor
     provider: esp32-ds18b20-pt100
     remote_id: pt100_sensor
+    internal: false
     name: "Sauna (PT100)"
     unit_of_measurement: "°C"
     accuracy_decimals: 1
@@ -49,6 +50,7 @@ sensor:
     id: rc_boiler_sensor
     provider: esp32-ds18b20-pt100
     remote_id: boiler_sensor
+    internal: false
     name: "Boiler (DS18B20)"
     unit_of_measurement: "°C"
     accuracy_decimals: 1
