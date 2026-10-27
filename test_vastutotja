@@ -2,7 +2,11 @@
 esphome:
   name: esp32-epaper-receiver
   friendly_name: ESP32 E-Paper Receiver
-
+  on_boot:
+    priority: -100
+    then:
+      - delay: 15s
+      - component.update: my_display
 esp32:
   board: esp32dev
   variant: esp32
