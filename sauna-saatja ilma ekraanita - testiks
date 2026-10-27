@@ -95,6 +95,7 @@ display:
     reset_pin: GPIO27
     data_rate: 27MHz
     rotation: 90
+    invert_colors: true
     buffer_size: 25%
     update_interval: 2s
     lambda: |-
