@@ -1,0 +1,115 @@
+esphome:
+  name: esp32-epaper-receiver
+  friendly_name: ESP32 E-Paper Receiver
+
+esp32:
+  board: esp32dev
+  variant: esp32
+  framework:
+    type: esp-idf
+
+logger:
+  level: DEBUG
+
+api:
+
+ota:
+  - platform: esphome
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  power_save_mode: NONE
+  ap:
+    ssid: ESP32 E-Paper Fallback Hotspot
+    password: "1ft1tR5H0ds7"
+
+captive_portal:
+
+# 1. Käivitame ESP-NOW ja loeme otse mälust saatja C++ struktuuri (8 baiti)
+espnow:
+  peers:
+    - E0:8C:FE:2F:B8:64  # Sinu saatja füüsiline MAC aadress
+  on_receive:
+    - then:
+        - sensor.template.publish:
+            id: sensor_pt100
+            state: !lambda |-
+              if (packet.data.size() >= 8) {
+                int pt100_val;
+                memcpy(&pt100_val, packet.data.data(), 4);
+                return pt100_val;
+              }
+              return NAN;
+        - sensor.template.publish:
+            id: sensor_ds18b20
+            state: !lambda |-
+              if (packet.data.size() >= 8) {
+                float ds_val;
+                memcpy(&ds_val, packet.data.data() + 4, 4); // loeb alates 4. baidist
+                return ds_val;
+              }
+              return NAN;
+
+# 2. Kaks template andurit väärtuste hoidmiseks
+sensor:
+  - platform: template
+    id: sensor_pt100
+    name: "Vastuvõetud PT100"
+    unit_of_measurement: "°C"
+    accuracy_decimals: 0
+  - platform: template
+    id: sensor_ds18b20
+    name: "Vastuvõetud DS18B20"
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+
+# 3. SPI siin E-Paper ekraani jaoks
+spi:
+  clk_pin: GPIO18
+  mosi_pin: GPIO23
+
+# Ilus modernne Roboto font
+font:
+  - file: "gfonts://Roboto"
+    id: font_small
+    size: 12
+  - file: "gfonts://Roboto"
+    id: font_medium
+    size: 18
+  - file: "gfonts://Roboto"
+    id: font_large
+    size: 26
+
+# 4. Ekraani disain suurte selgete tähtedega (kaotab hägususe)
+display:
+  - platform: waveshare_epaper
+    id: my_display
+    model: 2.13in-ttgo-b74
+    cs_pin: GPIO5
+    dc_pin: GPIO17
+    reset_pin: GPIO16
+    busy_pin: GPIO4
+    rotation: 90°
+    full_update_every: 1             # Täielik puhastus tagab maksimaalse kontrasti
+    update_interval: 10s             # Kuna saatja saadab iga 2s tagant, uuendame ekraani iga 10s järel
+    
+    lambda: |-
+      // Päis
+      it.print(10, 5, id(font_small), "ESP-NOW MONITOR");
+      
+      // 1. Rida: PT100 andmed suurte tähtedega
+      it.print(10, 25, id(font_medium), "PT100:");
+      if (id(sensor_pt100).has_state()) {
+        it.printf(110, 22, id(font_medium), "%.0f °C", id(sensor_pt100).state);
+      } else {
+        it.print(110, 22, id(font_medium), "-- °C");
+      }
+      
+      // 2. Rida: BOILER (DS18B20) suurte tähtedega (I ja L on täiesti teravad)
+      it.print(10, 50, id(font_medium), "BOILER:");
+      if (id(sensor_ds18b20).has_state()) {
+        it.printf(110, 45, id(font_large), "%.1f °C", id(sensor_ds18b20).state);
+      } else {
+        it.print(110, 45, id(font_large), "-- °C");
+      }
